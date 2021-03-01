@@ -1,8 +1,8 @@
-@import './normalize.scss';
+@import "./normalize.scss";
 
 .wrap {
-  margin: 100px auto 0;
-  width: 800px;
+	margin: 100px auto 0;
+	width: 800px;
 	height: 100vh;
 }
 .js-toxin-slider {
@@ -12,7 +12,7 @@
 .slider {
 	position: relative;
 	margin: 0 auto;
-  width: 300px;
+	width: 300px;
 	&__settings {
 		position: absolute;
 		margin: 0 auto;

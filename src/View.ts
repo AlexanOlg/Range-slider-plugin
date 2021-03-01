@@ -81,7 +81,7 @@ class View {
     return bar;
   }
 
-  createRunnerFirst(options: Options): any {
+  createRunnerFirst(options: Options): HTMLElement {
     const { orientation } = options;
     const runnerFirst = document.createElement('div');
     runnerFirst.classList.add(
@@ -94,14 +94,24 @@ class View {
     return runnerFirst;
   }
 
-  createRunnerSecond(options: Options): any {
+  createRunnerSecond(options: Options): HTMLElement {
     const { orientation } = options;
     const runnerSecond = document.createElement('div');
     runnerSecond.classList.add(
       'slider__runner', 'js-slider__runner', `slider__runner_${orientation}`, 'slider__runner_second',
     );
     this.slider.append(runnerSecond);
+    this.toggleRunners(options, runnerSecond);
     return runnerSecond;
+  }
+
+  toggleRunners(options: Options, element: HTMLElement) {
+    const { type } = options;
+    if (type === 'single') {
+      element.style.display = 'none';
+    } else {
+      element.style.display = 'block';
+    }
   }
 
   createSettings(): any {
@@ -122,7 +132,7 @@ class View {
     range.className = 'slider__range';
     settings.className = 'slider__settings';
     settings.id = 'slider-settings';
-    inputOrientation.className = 'slider__settings-input slider__setting orientation';
+    inputOrientation.className = 'slider__settings-input slider__setting_orientation';
     inputTo.className = 'slider__settings-change slider__settings-change_to';
     inputFrom.className = 'slider__settings-change slider__settings-change_from';
     inputRange.className = 'slider__settings-input slider__settings-input_range';
@@ -168,82 +178,80 @@ class View {
   // метод изменения параметров orientation, range, from и to
   changeOptions(options: Options): void {
     const inputRange = this.settings.querySelector('.slider__settings-input_range')! as HTMLInputElement;
-    console.log(inputRange);
+    const inputOrientation = this.settings.querySelector('.slider__setting_orientation')! as HTMLInputElement;
+    const outTo = this.settings.querySelector('.slider__range-outto')! as HTMLInputElement;
+    const outFrom = this.settings.querySelector('.slider__range-outfrom')! as HTMLInputElement;
+    const inputFrom = this.settings.querySelector('.slider__settings-change_from')! as HTMLInputElement;
+    const inputTo = this.settings.querySelector('.slider__settings-change_to')! as HTMLInputElement;
+
+    const outToValue = (<HTMLInputElement>outTo).value;
+    const outFromValue = (<HTMLInputElement>outFrom).value;
+    const inputFromValue = (<HTMLInputElement>inputFrom).value;
+    const inputToValue = (<HTMLInputElement>inputTo).value;
+
+    inputRange.onchange = () => {
+      if (options.type === 'double') {
+        options.type = 'single';
+        options.to = this.options.max;
+        this.removeSlider(this.options);
+      } else {
+        this.options.type = 'double';
+        this.removeSlider(this.options);
+      }
+    };
+    inputOrientation.onchange = () => {
+      if (options.orientation === 'horizontal') {
+        options.orientation = 'vertical';
+        this.removeSlider(options);
+      } else {
+        options.orientation = 'horizontal';
+        this.removeSlider(options);
+      }
+    };
+
+    outTo.onchange = () => {
+      const value = parseInt((<HTMLInputElement>outTo).value, 10);
+      options.to = value;
+      this.startPosition(options);
+    };
+    outFrom.onchange = () => {
+      const value = parseInt(outFromValue.toString(), 10);
+      options.from = value;
+      this.startPosition(options);
+    };
+
+    inputFrom.onchange = () => {
+      const value = parseInt(inputFromValue.toString(), 10);
+      if (value < 0) {
+        options.from = options.min;
+      }
+      options.from = Math.abs(value);
+      this.startPosition(options);
+    };
+    inputTo.onchange = () => {
+      const value = parseInt(inputToValue.toString(), 10);
+      if (value > options.max) {
+        options.to = options.max;
+      }
+      options.to = Math.abs(value);
+      this.startPosition(options);
+    };
   }
-  //   const inputOrientation = this.slider.querySelector('.slider__setting orientation');
-  //   const outTo = this.slider.querySelector('.slider__range-outto') as HTMLInputElement;
-  //   const outFrom = this.slider.querySelector('.slider__range-outfrom') as HTMLInputElement;
-  //   const inputFrom = this.slider.querySelector('.slider__settings-change_from') as HTMLInputElement;
-  //   const inputTo = this.slider.querySelector('.slider__settings-change_to') as HTMLInputElement;
 
-  //   const outToValue = (<HTMLInputElement>outTo).value;
-  //   const outFromValue = (<HTMLInputElement>outFrom).value;
-  //   const inputFromValue = (<HTMLInputElement>inputFrom).value;
-  //   const inputToValue = (<HTMLInputElement>inputTo).value;
+  // Метод удаления слайдера, участвует при изменении changeSlider
+  removeSlider(options: Options): any {
+    this.slider.remove();
+    this.slider = this.createSlider(options);
+    this.createTrack(options);
+    this.createScale(options);
+    this.createBar(options);
 
-  //   (<HTMLInputElement>inputRange).onchange = () => {
-  //     if (options.type === 'double') {
-  //       options.type = 'single';
-  //       options.to = options.max;
-  //       this.removeSlider(options);
-  //     } else {
-  //       options.type = 'double';
-  //       this.removeSlider(options);
-  //     }
-  //   };
+    this.createScaleSettings(options);
+    this.startPosition(options);
 
-  //   (<HTMLInputElement>inputOrientation).onchange = () => {
-  //     if (options.orientation === 'horizontal') {
-  //       options.orientation = 'vertical';
-  //       this.removeSlider(options);
-  //     } else {
-  //       options.orientation = 'horizontal';
-  //       this.removeSlider(options);
-  //     }
-  //   };
-  //   outTo.onchange = () => {
-  //     const value = parseInt(outToValue.toString(), 10);
-  //     options.to = value;
-  //     this.startPosition(options);
-  //   };
-  //   outFrom.onchange = () => {
-  //     const value = parseInt(outFromValue.toString(), 10);
-  //     options.from = value;
-  //     this.startPosition(options);
-  //   };
-
-  //   inputFrom.onchange = () => {
-  //     const value = parseInt(inputFromValue.toString(), 10);
-  //     if (value < 0) {
-  //       options.from = options.min;
-  //     }
-  //     options.from = Math.abs(value);
-  //     this.startPosition(options);
-  //   };
-  //   inputTo.onchange = () => {
-  //     const value = parseInt(inputToValue.toString(), 10);
-  //     if (value > options.max) {
-  //       options.to = options.max;
-  //     }
-  //     options.to = Math.abs(value);
-  //     this.startPosition(options);
-  //   };
-  // }
-
-  // // Метод удаления слайдера, участвует при изменении changeSlider
-  // removeSlider(options: Options): any {
-  //   this.slider.remove();
-  //   this.slider = this.createSlider(options);
-  //   this.createTrack(options);
-  //   this.createScale(options);
-  //   this.createBar(options);
-
-  //   this.createScaleSettings(options);
-  //   this.startPosition(options);
-
-  //   this.addEventListeners();
-  //   this.createBarSetting(this.options);
-  // }
+    this.addEventListeners();
+    this.createBarSetting(options);
+  }
 
   // Начальная позиция бегунков
   startPosition(options: Options) {
@@ -355,7 +363,7 @@ class View {
     const { orientation } = this.options;
     let mouseValue = 0;
     event.preventDefault();
-    if (!/roller/.test(target.className)) return;
+    if (!/runner/.test(target.className)) return;
 
     if (orientation === 'horizontal') {
       if (event.type === 'touchmove') {
@@ -380,9 +388,9 @@ class View {
     const fromDistance = Math.abs(from - value);
     const toDistance = Math.abs(to - value);
 
-    // const outTo = document.querySelector('.slider__range-outto');
-    // const outFrom = document.querySelector('.slider__range-outfrom');
-    // // const isSingle = this.options.type === 'single';
+    const outTo = this.settings.querySelector('.slider__range-outto')! as HTMLInputElement;
+    const outFrom = this.settings.querySelector('.slider__range-outfrom')! as HTMLInputElement;
+    // const isSingle = this.options.type === 'single';
 
     if (fromDistance * toDistance === 0) return;
 
@@ -392,14 +400,14 @@ class View {
       if (isTarget === 'from') {
         if (to > value) {
           this.options.from = value;
-          // (<HTMLElement>outFrom).value = valueOut;
+          (<HTMLInputElement>outFrom).value = valueOut;
           this.runnerSecond.setAttribute('data-text', valueOut);
           this.moveRunnerAtValue(this.options.from, this.runnerSecond);
           this.createBarSetting(this.options);
         }
       } else if (from < value) {
         this.options.to = value;
-        // (<HTMLElement>outTo).value = valueOut;
+        (<HTMLInputElement>outTo).value = valueOut;
         this.runnerFirst.setAttribute('data-text', valueOut);
         this.moveRunnerAtValue(this.options.to, this.runnerFirst);
         this.createBarSetting(this.options);
@@ -412,7 +420,7 @@ class View {
       this.moveRunnerAtValue(this.options.to, target);
       this.createBarSetting(this.options);
       if (value !== to) {
-        // (<HTMLElement>outTo).value = valueOut;
+        (<HTMLInputElement>outTo).value = valueOut;
         this.runnerFirst.setAttribute('data-text', valueOut);
       }
     } else {
@@ -424,7 +432,7 @@ class View {
       this.createBarSetting(this.options);
       if (value !== from) {
         this.runnerSecond.setAttribute('data-text', valueOut);
-        // (<HTMLElement>outFrom).value = valueOut;
+        (<HTMLInputElement>outFrom).value = valueOut;
       }
     }
   }
@@ -453,12 +461,11 @@ class View {
 
   // формула для вычисления каждого бегунка отдельно
   getRunnerPositions(options: Options): any {
-    const runners = this.slider.querySelectorAll('.slider__runner');
-    const runnersPosition = [this.calculator(runners[0], options), this.calculator(runners[1], options)];
+    const runnersPosition = [this.calculator(this.runnerFirst, options), this.calculator(this.runnerSecond, options)];
     return runnersPosition.sort((a, b) => a - b);
   }
 
-  calculator(element: Element, options: Options): number {
+  calculator(element: HTMLElement, options: Options): number {
     const { orientation } = options;
     const side: 'left' | 'top' = orientation === 'horizontal' ? 'left' : 'top';
     const width = Number.parseInt(getComputedStyle(element).width, 10);
