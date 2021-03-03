@@ -1,7 +1,6 @@
 import { Options } from './interfaces';
 
 const standartOptions: Options = {
-  id: 'js-toxin-slider',
   orientation: 'horizontal',
   type: 'double',
   min: 0,

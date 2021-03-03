@@ -1,5 +1,4 @@
 interface Options {
-  id: string,
   orientation: string,
   type: string,
   min: number,

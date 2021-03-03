@@ -1,6 +1,6 @@
 import { standartOptions } from './standartOptions';
-import { View } from './View';
+import { Presenter } from './Presenter';
 
-$('.js-toxin-slider').ready(() => {
-  new View(standartOptions);
-});
+const $wrap = $('.js-toxin-slider');
+
+new Presenter(standartOptions, $wrap);
