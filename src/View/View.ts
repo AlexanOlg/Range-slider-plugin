@@ -8,23 +8,25 @@
 // а также реагировать на взаимодействие пользователя с приложением.
 // Каждый компонент слайдера (бегунки, шкала и т. д.) должен быть
 // представлен отдельным классом
-import { Options } from './interfaces';
-import { EventEmitter } from './EventEmitter';
+import { Options } from '../interfaces';
+import { EventEmitter } from '../EventEmitter';
+import { Runner } from './Runner';
+import { Track } from './Track';
+import { Scale } from './Scale';
+import { Bar } from './Bar';
 
 class View {
   public options: Options;
 
   public slider: HTMLElement;
 
-  public track: HTMLElement;
+  public track: Track;
 
-  public scale: HTMLElement;
+  public scale: Scale;
 
-  public bar: HTMLElement;
+  public runner: Runner;
 
-  public runnerFirst: HTMLElement;
-
-  public runnerSecond: HTMLElement;
+  public bar: Bar;
 
   public settings: HTMLElement;
 
@@ -49,18 +51,17 @@ class View {
     this.slider = this.createSlider();
     this.track = this.createTrack(options);
     this.scale = this.createScale(options);
+    this.runner = this.createRunners(options);
     this.bar = this.createBar(options);
-    this.runnerFirst = this.createRunnerFirst(options);
-    this.runnerSecond = this.createRunnerSecond(options);
     this.settings = this.createSettings();
     this.stepSlider = this.getStep(options);
     this.sizeSlider = this.getSize(options);
     this.active = true;
     this.positionSlider = this.getPosition();
     this.startPosition(options);
-    this.createBarSetting(options);
+    this.bar.createBarSetting(options);
     this.addEventListeners();
-    this.createScaleSettings(options);
+    this.scale.createScaleSettings(options);
     this.changeOptions(options);
   }
 
@@ -71,52 +72,20 @@ class View {
     return slider;
   }
 
-  createTrack(options: Options): any {
-    const { orientation } = options;
-    const track = document.createElement('div');
-    track.className = `slider__track slider__track_${orientation}`;
-    this.slider.append(track);
-    return track;
+  createTrack(options: Options): Track {
+    return new Track(options);
   }
 
-  createScale(options: Options): any {
-    const { orientation } = options;
-    const scale = document.createElement('div');
-    scale.className = `slider__scale slider__scale_${orientation}`;
-    this.slider.append(scale);
-    return scale;
+  createRunners(options: Options): Runner {
+    return new Runner(options);
   }
 
-  createBar(options: Options): any {
-    const { orientation } = options;
-    const bar = document.createElement('div');
-    bar.className = `slider__bar slider__bar_${orientation}`;
-    this.slider.append(bar);
-    return bar;
+  createBar(options: Options): Bar {
+    return new Bar(options);
   }
 
-  createRunnerFirst(options: Options): HTMLElement {
-    const { orientation } = options;
-    const runnerFirst = document.createElement('div');
-    runnerFirst.classList.add(
-      'slider__runner',
-      'js-slider__runner',
-      `slider__runner_${orientation}`,
-      'slider__runner_first',
-    );
-    this.slider.append(runnerFirst);
-    return runnerFirst;
-  }
-
-  createRunnerSecond(options: Options): HTMLElement {
-    const { orientation } = options;
-    const runnerSecond = document.createElement('div');
-    runnerSecond.classList.add(
-      'slider__runner', 'js-slider__runner', `slider__runner_${orientation}`, 'slider__runner_second',
-    );
-    this.slider.append(runnerSecond);
-    // this.toggleRunners(options, runnerSecond);
-    return runnerSecond;
+  createScale(options: Options): Scale {
+    return new Scale(options, this);
   }
 
   createSettings(): any {
@@ -246,16 +215,15 @@ class View {
   removeSlider(options: Options): void {
     this.slider.remove();
     this.slider = this.createSlider();
-    this.createTrack(options);
-    this.createScale(options);
-    this.createBar(options);
-    this.createRunnerFirst(options);
-    this.createRunnerSecond(options);
+    this.track = this.createTrack(options);
+    this.scale = this.createScale(options);
+    this.bar = this.createBar(options);
+    this.runner = this.createRunners(options);
     this.createSettings();
     this.startPosition(options);
-    this.createBarSetting(options);
+    this.bar.createBarSetting(options);
     this.addEventListeners();
-    this.createScaleSettings(options);
+    this.scale.createScaleSettings(options);
     this.changeOptions(options);
   }
 
@@ -263,45 +231,16 @@ class View {
   startPosition(options: Options) {
     const startFrom = `${this.options.from.toLocaleString()}`;
     const startTo = `${this.options.to.toLocaleString()}`;
+    const runners = this.slider.querySelectorAll('.slider__runner');
 
     if (this.options.type === 'single') {
-      this.moveRunnerAtValue();
-      this.runnerFirst.setAttribute('data-text', startTo);
+      this.runner.moveRunnerAtValue(options, <HTMLElement>runners[0], <HTMLElement>runners[1]);
+      runners[0].setAttribute('data-text', startTo);
     }
-    this.moveRunnerAtValue();
+    this.runner.moveRunnerAtValue(options, <HTMLElement>runners[0], <HTMLElement>runners[1]);
 
-    this.runnerSecond.setAttribute('data-text', startFrom);
-    this.createBarSetting(options);
-  }
-
-  // расстановка бегунков по from и to
-  moveRunnerAtValue(): void {
-    const { to, from, orientation } = this.options;
-    const convertTo = this.convertingValueToPx(to);
-    const convertFrom = this.convertingValueToPx(from);
-    const posTo = this.convertingPxToPercentages(convertTo);
-    const posFrom = this.convertingPxToPercentages(convertFrom);
-
-    if (orientation === 'horizontal') {
-      this.runnerFirst.style.left = `${posFrom}%`;
-      this.runnerSecond.style.left = `${posTo}%`;
-    } else {
-      this.runnerFirst.style.bottom = `${posFrom}%`;
-      this.runnerSecond.style.bottom = `${posTo}%`;
-    }
-  }
-
-  convertingPxToPercentages(value: number): number {
-    return (value * 100) / this.getSize(this.options);
-  }
-
-  convertingValueToPx(value: number): number {
-    const { min, max, step } = this.options;
-    if (value === max) {
-      return this.getSize(this.options);
-    }
-    const pxValue = ((value - min) / step) * this.getStep(this.options);
-    return pxValue;
+    runners[1].setAttribute('data-text', startFrom);
+    this.bar.createBarSetting(options);
   }
 
   addEventListeners() {
@@ -309,18 +248,16 @@ class View {
     this.slider.addEventListener('touchstart', mouse);
     this.slider.addEventListener('mousedown', mouse);
     this.onclickTrack = this.onclickTrack.bind(this);
-    this.onclickScale = this.onclickScale.bind(this);
-
     this.slider.addEventListener('click', this.onclickTrack);
-    this.scale.addEventListener('click', this.onclickScale);
   }
 
   // правый или левый двигаем?
   public getTarget(target: any): string {
-    if (this.runnerFirst) {
-      if (this.runnerFirst.contains(target)) return 'from';
+    const runners = this.slider.querySelectorAll('.slider__runner');
+    if (runners[0]) {
+      if (runners[0].contains(target)) return 'from';
     }
-    if (this.runnerSecond.contains(target)) {
+    if (runners[1].contains(target)) {
       return 'to';
     }
     return 'undefined';
@@ -350,16 +287,6 @@ class View {
 
   move(target: HTMLElement, event: any) {
     // залипание у левого края
-    if (this.options.to === this.options.min) {
-      this.active = false;
-    }
-    if (this.active) {
-      this.runnerSecond.style.zIndex = '3';
-      this.active = !this.active;
-    } else if (this.options.from === this.options.min) {
-      this.runnerSecond.style.zIndex = '0';
-      this.active = !this.active;
-    }
     const { orientation } = this.options;
     let mouseValue = 0;
     event.preventDefault();
@@ -379,75 +306,8 @@ class View {
     this.newPosition(mouseValue, target);
   }
 
-  // toggleRunners(options: Options, element: HTMLElement): void {
-  //   const { type } = options;
-  //   if (type === 'single') {
-  //     element.style.display = 'none';
-  //   } else {
-  //     element.style.display = 'block';
-  //   }
-  // }
-
   // value - значение шкалы, target - бегунок from или to
   newPosition(value: number, target?: HTMLElement): void {
-    // const valueOut = `${value.toLocaleString()}`;
-    // const { from, to } = this.state;
-    // const type = this.getTarget(target);
-
-    // const fromDistance = Math.abs(from - value);
-    // const toDistance = Math.abs(to - value);
-
-    // const outTo = this.settings.querySelector('.slider__range-outto')! as HTMLInputElement;
-    // const outFrom = this.settings.querySelector('.slider__range-outfrom')! as HTMLInputElement;
-    // // const isSingle = this.options.type === 'single';
-
-    // if (fromDistance * toDistance === 0) return;
-
-    // if (!target) {
-    //   const isTarget = (fromDistance < toDistance) ? 'from' : 'to';
-
-    //   if (isTarget === 'from') {
-    //     if (to > value) {
-    //       this.state.from = value;
-    //       (<HTMLInputElement>outFrom).value = valueOut;
-    //       this.runnerSecond.setAttribute('data-text', valueOut);
-    //       this.moveRunnerAtValue(this.state.from, this.runnerSecond);
-    //       // Презентер должен поймать это значение и отправить в модель,
-    //       // та проверит вернёт презентеру, тот вернёт в вью
-    //       this.emitter.emit('newSetting', { from: value });
-    //       this.createBarSetting(this.options);
-    //     }
-    //   } else if (from < value) {
-    //     this.options.to = value;
-    //     (<HTMLInputElement>outTo).value = valueOut;
-    //     this.runnerFirst.setAttribute('data-text', valueOut);
-    //     this.moveRunnerAtValue(this.options.to, this.runnerFirst);
-    //     this.createBarSetting(this.options);
-    //   }
-    // } else if (type === 'from') {
-    //   if (value < this.options.from) {
-    //     value = this.options.to;
-    //   }
-    //   this.options.to = value;
-    //   this.moveRunnerAtValue(this.options.to, target);
-    //   this.createBarSetting(this.options);
-    //   if (value !== to) {
-    //     (<HTMLInputElement>outTo).value = valueOut;
-    //     this.runnerFirst.setAttribute('data-text', valueOut);
-    //   }
-    // } else {
-    //   if (value > this.options.to) {
-    //     value = this.options.from;
-    //   }
-    //   this.options.from = value;
-    //   this.moveRunnerAtValue(this.options.from, target);
-    //   this.createBarSetting(this.options);
-    //   if (value !== from) {
-    //     this.runnerSecond.setAttribute('data-text', valueOut);
-    //     (<HTMLInputElement>outFrom).value = valueOut;
-    //   }
-    // }
-    // this.toggleRunners(this.options, this.runnerSecond);
     const {
       from, to, type, step,
     } = this.options;
@@ -455,10 +315,11 @@ class View {
     const fromDistance = Math.abs(from - value);
     const toDistance = Math.abs(to - value);
     const isSingle = type === 'single';
+    const runners = this.slider.querySelectorAll('.slider__runner');
 
     if (isSingle && fromDistance) {
       this.emitter.emit('newSetting', { from: value });
-      this.moveRunnerAtValue();
+      this.runner.moveRunnerAtValue(this.options, <HTMLElement>runners[0], <HTMLElement>runners[1]);
       return;
     }
 
@@ -467,33 +328,23 @@ class View {
 
       if (isFrom === 'from') {
         this.emitter.emit('newSetting', { from: value });
-        this.moveRunnerAtValue();
+        this.runner.moveRunnerAtValue(this.options, <HTMLElement>runners[0], <HTMLElement>runners[1]);
       } else {
         this.emitter.emit('newSetting', { to: value });
-        this.moveRunnerAtValue();
+        this.runner.moveRunnerAtValue(this.options, <HTMLElement>runners[0], <HTMLElement>runners[1]);
       }
     } else {
       const targets = this.getTarget(target);
       if (targets === 'from') {
         if (value > to - step) value = from;
         this.emitter.emit('newSetting', { from: value });
-        this.moveRunnerAtValue();
+        this.runner.moveRunnerAtValue(this.options, <HTMLElement>runners[0], <HTMLElement>runners[1]);
       } else {
         if (value < from + step) value = to;
         this.emitter.emit('newSetting', { to: value });
-        this.moveRunnerAtValue();
+        this.runner.moveRunnerAtValue(this.options, <HTMLElement>runners[0], <HTMLElement>runners[1]);
       }
     }
-  }
-
-  // по нажатию на цифры чтоб двигался бегунок
-  onclickScale(event: any) {
-    event.preventDefault();
-    const { target } = event;
-    if (!(target instanceof HTMLElement)) return;
-    if (!target.classList.contains('slider__scale-value')) return;
-    const value = Number(target.innerHTML);
-    this.newPosition(value);
   }
 
   // Находим координаты
@@ -506,19 +357,6 @@ class View {
     const value = this.convertingPxToValue(coordinate);
     this.newPosition(value);
     // теперь выводятся либо горизонталь, либо вертикаль
-  }
-
-  // формула для вычисления каждого бегунка отдельно
-  getRunnerPositions(options: Options): any {
-    const runnersPosition = [this.calculator(this.runnerFirst, options), this.calculator(this.runnerSecond, options)];
-    return runnersPosition.sort((a, b) => a - b);
-  }
-
-  calculator(element: HTMLElement, options: Options): number {
-    const { orientation } = options;
-    const side: 'left' | 'top' = orientation === 'horizontal' ? 'left' : 'top';
-    const width = Number.parseInt(getComputedStyle(element).width, 10);
-    return element.getBoundingClientRect()[side] + width / 2;
   }
 
   getPosition() {
@@ -541,92 +379,8 @@ class View {
     return this.getSize(options) / amount;
   }
 
-  // метод чтобы прятать шкалу
-  createScaleSettings(options: Options): void {
-    const { hideScale } = options;
-    if (hideScale) {
-      this.scale.style.display = 'none';
-      return;
-    }
-    this.scale.style.display = '';
-    this.scale.innerHTML = '';
-    this.scale.className = `slider__scale slider__scale_${this.options.orientation}`;
-    // отвечает за появление шкалы
-    this.insertScale();
-  }
-
-  // создаем цикл, в зависимости от длины шкалы создаем фрагмент
-  insertScale() {
-    const { min, max, step } = this.options;
-    // переменная одного деления шкалы
-    const division = this.calculatingDivision(this.options);
-    // перевод деления шкалы в пиксельное значение
-    const divToPx = (division / step) * this.stepSlider;
-    // создаем новый пустой фрагмент документа
-    const fragDoc = document.createDocumentFragment();
-    // создаем цикл из пиксельных значений и прибавляем деление шкалы
-    let actual = 0;
-    for (let i = min; i < max; i += division) {
-      if (actual > this.sizeSlider - 50) break;
-      this.createScaleValue(fragDoc, i, actual, this.options);
-      actual += divToPx;
-    }
-    // появление шкалы в документе
-    this.createScaleValue(fragDoc, max, this.sizeSlider, this.options);
-    this.scale.append(fragDoc);
-  }
-
-  // метод вычисления одного деления шкалы в зависимости от длины
-  calculatingDivision(options: Options) {
-    const { step } = options;
-    const value = Math.ceil(this.sizeSlider / this.stepSlider);
-    const division = Math.ceil(value / 5) * step;
-    return division;
-  }
-
-  // Создание шкалы в документе
-  createScaleValue(fragDoc: DocumentFragment,
-    value: number, position: number, options: Options): void {
-    const { orientation } = options;
-    const scaleValue = document.createElement('span');
-    scaleValue.className = `slider__scale-value slider__scale-value_${orientation}`;
-    scaleValue.innerHTML = value.toString();
-    fragDoc.append(scaleValue);
-    const pxToPerc = this.convertingPxToPercentages(position);
-
-    const side = orientation === 'horizontal' ? 'left' : 'bottom';
-    scaleValue.style[side] = `${pxToPerc}%`;
-  }
-
-  // вычисляем полоску, в конструктор чтоб сразу отображался на стр
-  createBarSetting(options: Options) {
-    const { type, orientation } = options;
-    const horizontalType = orientation === 'horizontal';
-    const side = horizontalType ? 'left' : 'top';
-    const size = horizontalType ? 'width' : 'height';
-    const runnersPositions = this.getRunnerPositions(options);
-    const positionSlider = this.getPosition();
-    const singleType = type === 'single';
-    // const bar = document.querySelector('.slider__bar');
-
-    if (singleType) {
-      if (horizontalType) {
-        const end = this.convertingPxToPercentages(Math.abs(runnersPositions - positionSlider));
-        this.bar.style[side] = '0%';
-        this.bar.style[size] = `${end}%`;
-      } else {
-        const start = this.convertingPxToPercentages(Math.abs(runnersPositions - positionSlider));
-        const end = 100 - start;
-
-        this.bar.style[side] = `${start}%`;
-        this.bar.style[size] = `${end}%`;
-      }
-    } else {
-      const start = this.convertingPxToPercentages(Math.abs(runnersPositions[0] - positionSlider));
-      const length = this.convertingPxToPercentages(Math.abs(runnersPositions[1] - runnersPositions[0]));
-      this.bar.style[side] = `${start}%`;
-      this.bar.style[size] = `${length}%`;
-    }
+  convertingPxToPercentages(value: number): number {
+    return (value * 100) / this.getSize(this.options);
   }
 
   // возвращаем начальный бегунок
@@ -671,7 +425,6 @@ class View {
     this.options = {
       ...updataOptions,
     };
-    console.log(this.options);
   }
 }
 

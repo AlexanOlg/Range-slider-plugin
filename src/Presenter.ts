@@ -7,7 +7,7 @@
 // отображение
 
 import { standartOptions } from './standartOptions';
-import { View } from './View';
+import { View } from './View/View';
 import { Model } from './Model';
 import { Options } from './interfaces';
 import { EventEmitter } from './EventEmitter';
