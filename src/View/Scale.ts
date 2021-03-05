@@ -7,17 +7,10 @@ class Scale {
 
   public view: View;
 
-  public stepSlider: number;
-
-  public sizeSlider: number;
-
   constructor(options: Options, view: View) {
     this.options = options;
     this.view = view;
-    console.log(view);
     this.createScaleView(options);
-    this.stepSlider = this.getStep(options);
-    this.sizeSlider = this.getSize(options);
   }
 
   createScaleView(options: Options) {
@@ -70,18 +63,18 @@ class Scale {
     // переменная одного деления шкалы
     const division = this.calculatingDivision(this.options);
     // перевод деления шкалы в пиксельное значение
-    const divToPx = (division / step) * this.stepSlider;
+    const divToPx = (division / step) * this.view.getStep(this.options);
     // создаем новый пустой фрагмент документа
     const fragDoc = document.createDocumentFragment();
     // создаем цикл из пиксельных значений и прибавляем деление шкалы
     let actual = 0;
     for (let i = min; i < max; i += division) {
-      if (actual > this.sizeSlider - 50) break;
+      if (actual > this.view.getSize(this.options) - 50) break;
       this.createScaleValue(fragDoc, i, actual, this.options);
       actual += divToPx;
     }
     // появление шкалы в документе
-    this.createScaleValue(fragDoc, max, this.sizeSlider, this.options);
+    this.createScaleValue(fragDoc, max, this.view.getSize(this.options), this.options);
     const scale = document.querySelector('.slider__scale') as HTMLElement;
     scale.append(fragDoc);
   }
@@ -89,7 +82,7 @@ class Scale {
   // метод вычисления одного деления шкалы в зависимости от длины
   calculatingDivision(options: Options) {
     const { step } = options;
-    const value = Math.ceil(this.sizeSlider / this.stepSlider);
+    const value = Math.ceil(this.view.getSize(options) / this.view.getStep(options));
     const division = Math.ceil(value / 5) * step;
     return division;
   }
@@ -108,24 +101,8 @@ class Scale {
     scaleValue.style[side] = `${pxToPerc}%`;
   }
 
-  getSize(options: Options): number {
-    const { orientation } = options;
-    const slider = document.querySelector('.slider') as HTMLElement;
-    const positionSlider = slider.getBoundingClientRect();
-    return orientation === 'horizontal' ? positionSlider.width : positionSlider.height;
-  }
-
-  getStep(options: Options): number {
-    const {
-      min, max, step,
-    } = options;
-    const amount = Math.ceil((max - min) / step);
-    // длину шкалы делим на amount
-    return this.getSize(options) / amount;
-  }
-
   convertingPxToPercentages(value: number): number {
-    return (value * 100) / this.getSize(this.options);
+    return (value * 100) / this.view.getSize(this.options);
   }
 }
 export { Scale };

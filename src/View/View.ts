@@ -73,7 +73,7 @@ class View {
   }
 
   createTrack(options: Options): Track {
-    return new Track(options);
+    return new Track(options, this);
   }
 
   createRunners(options: Options): Runner {
@@ -81,7 +81,7 @@ class View {
   }
 
   createBar(options: Options): Bar {
-    return new Bar(options);
+    return new Bar(options, this);
   }
 
   createScale(options: Options): Scale {
@@ -240,6 +240,7 @@ class View {
     this.runner.moveRunnerAtValue(options, <HTMLElement>runners[0], <HTMLElement>runners[1]);
 
     runners[1].setAttribute('data-text', startFrom);
+    this.bar.createBarView(options);
     this.bar.createBarSetting(options);
   }
 
@@ -359,9 +360,16 @@ class View {
     // теперь выводятся либо горизонталь, либо вертикаль
   }
 
-  getPosition() {
-    const side = this.options.orientation === 'horizontal' ? 'left' : 'top';
-    return this.slider.getBoundingClientRect()[side];
+  getPosition(): number {
+    const { orientation } = this.options;
+    const slider = document.querySelector('.slider') as HTMLElement;
+    let i = 0;
+    if (orientation === 'horizontal') {
+      i = slider.getBoundingClientRect().left;
+    } else {
+      i = slider.getBoundingClientRect().top;
+    }
+    return i;
   }
 
   getSize(options: Options): number {

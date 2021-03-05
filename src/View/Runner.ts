@@ -24,7 +24,6 @@ class Runner {
     );
 
     const slider = document.querySelector('.slider') as HTMLElement;
-    console.log(slider);
     slider.append(runnerFrom);
     slider.append(runnerTo);
     this.moveRunnerAtValue(options, runnerFrom, runnerTo);

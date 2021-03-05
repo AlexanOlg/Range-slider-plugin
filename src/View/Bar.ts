@@ -1,12 +1,18 @@
+/* eslint-disable no-console */
 /* eslint-disable max-len */
 import { Options } from '../interfaces';
+import { View } from './View';
 
 class Bar {
   public options: Options;
 
-  constructor(options: Options) {
+  public view: View;
+
+  constructor(options: Options, view: View) {
     this.options = options;
+    this.view = view;
     this.createBarView(options);
+    this.createBarSetting(options);
   }
 
   createBarView(options: Options): void {
@@ -22,49 +28,31 @@ class Bar {
   createBarSetting(options: Options) {
     const { type, orientation } = options;
     const horizontalType = orientation === 'horizontal';
-    const side: 'left' | 'top' = horizontalType ? 'left' : 'top';
-    const size: 'width' | 'height' = horizontalType ? 'width' : 'height';
+    const leftTop: 'left' | 'top' = horizontalType ? 'left' : 'top';
+    const widthHeight: 'width' | 'height' = horizontalType ? 'width' : 'height';
     const runnersPositions = this.getRunnerPositions(options);
-    const positionSlider = this.getPosition(options);
+    const positionSlider = this.view.getPosition();
     const bar = document.querySelector('.slider__bar') as HTMLElement;
     const singleType = type === 'single';
     if (singleType) {
       if (horizontalType) {
         const end = this.convertingPxToPercentages(Math.abs(runnersPositions[1] - positionSlider), options);
-        bar.style[side] = '0%';
-        bar.style[size] = `${end}%`;
+        bar.style[leftTop] = '0%';
+        bar.style[widthHeight] = `${end}%`;
       } else {
         const start = this.convertingPxToPercentages(Math.abs(runnersPositions[1] - positionSlider), options);
         const end = 100 - start;
 
-        bar.style[side] = `${start}%`;
-        bar.style[size] = `${end}%`;
+        bar.style[leftTop] = `${start}%`;
+        bar.style[widthHeight] = `${end}%`;
       }
     } else {
       const start = this.convertingPxToPercentages(Math.abs(runnersPositions[0] - positionSlider), options);
+      console.log(start);
       const length = this.convertingPxToPercentages(Math.abs(runnersPositions[1] - runnersPositions[0]), options);
-      bar.style[side] = `${start}%`;
-      bar.style[size] = `${length}%`;
+      bar.style[leftTop] = `${start}%`;
+      bar.style[widthHeight] = `${length}%`;
     }
-  }
-
-  getPosition(options: Options): number {
-    const { orientation } = options;
-    const slider = document.querySelector('.slider') as HTMLElement;
-    let i = 0;
-    if (orientation === 'horizontal') {
-      i = slider.getBoundingClientRect().left;
-    } else {
-      i = slider.getBoundingClientRect().top;
-    }
-    return i;
-  }
-
-  getSize(options: Options): number {
-    const { orientation } = options;
-    const slider = document.querySelector('.slider') as HTMLElement;
-    const positionSlider = slider.getBoundingClientRect();
-    return orientation === 'horizontal' ? positionSlider.width : positionSlider.height;
   }
 
   // формула для вычисления каждого бегунка отдельно
@@ -77,13 +65,13 @@ class Bar {
 
   calculator(element: Element, options: Options): number {
     const { orientation } = options;
-    const side: 'left' | 'top' = orientation === 'horizontal' ? 'left' : 'top';
+    const leftTop: 'left' | 'top' = orientation === 'horizontal' ? 'left' : 'top';
     const width = Number.parseInt(getComputedStyle(element).width, 10);
-    return element.getBoundingClientRect()[side] + width / 2;
+    return element.getBoundingClientRect()[leftTop] + width / 2;
   }
 
   convertingPxToPercentages(value: number, options: Options): number {
-    return (value * 100) / this.getSize(options);
+    return (value * 100) / this.view.getSize(options);
   }
 }
 
