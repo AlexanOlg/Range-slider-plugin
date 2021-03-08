@@ -1,11 +1,15 @@
 /* eslint-disable no-console */
 import { Options } from '../interfaces';
+import { View } from './View';
 
 class Runner {
   public options: Options;
 
-  constructor(options: Options) {
+  public view: View;
+
+  constructor(options: Options, view: View) {
     this.options = options;
+    this.view = view;
     this.createRunnerFromTo(options);
   }
 
@@ -34,8 +38,8 @@ class Runner {
     const { to, from, orientation } = options;
     const convertTo = this.convertingValueToPx(to);
     const convertFrom = this.convertingValueToPx(from);
-    const posTo = this.convertingPxToPercentages(convertTo);
-    const posFrom = this.convertingPxToPercentages(convertFrom);
+    const posTo = this.view.convertingPxToPercentages(convertTo);
+    const posFrom = this.view.convertingPxToPercentages(convertFrom);
 
     if (orientation === 'horizontal') {
       runnerFrom.style.left = `${posFrom}%`;
@@ -46,33 +50,13 @@ class Runner {
     }
   }
 
-  convertingPxToPercentages(value: number): number {
-    return (value * 100) / this.getSize(this.options);
-  }
-
   convertingValueToPx(value: number): number {
     const { min, max, step } = this.options;
     if (value === max) {
-      return this.getSize(this.options);
+      return this.view.getSize(this.options);
     }
-    const pxValue = ((value - min) / step) * this.getStep(this.options);
+    const pxValue = ((value - min) / step) * this.view.getStep(this.options);
     return pxValue;
-  }
-
-  getSize(options: Options): number {
-    const { orientation } = options;
-    const slider = document.querySelector('.slider') as HTMLElement;
-    const positionSlider = slider.getBoundingClientRect();
-    return orientation === 'horizontal' ? positionSlider.width : positionSlider.height;
-  }
-
-  getStep(options: Options): number {
-    const {
-      min, max, step,
-    } = options;
-    const amount = Math.ceil((max - min) / step);
-    // длину шкалы делим на amount
-    return this.getSize(options) / amount;
   }
 }
 export { Runner };

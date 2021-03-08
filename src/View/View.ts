@@ -77,7 +77,7 @@ class View {
   }
 
   createRunners(options: Options): Runner {
-    return new Runner(options);
+    return new Runner(options, this);
   }
 
   createBar(options: Options): Bar {
@@ -239,7 +239,8 @@ class View {
     }
     this.runner.moveRunnerAtValue(options, <HTMLElement>runners[0], <HTMLElement>runners[1]);
 
-    runners[1].setAttribute('data-text', startFrom);
+    runners[0].setAttribute('data-text', startFrom);
+    runners[1].setAttribute('data-text', startTo);
     this.bar.createBarView(options);
     this.bar.createBarSetting(options);
   }
@@ -248,8 +249,6 @@ class View {
     const mouse = this.moveStart.bind(this);
     this.slider.addEventListener('touchstart', mouse);
     this.slider.addEventListener('mousedown', mouse);
-    this.onclickTrack = this.onclickTrack.bind(this);
-    this.slider.addEventListener('click', this.onclickTrack);
   }
 
   // правый или левый двигаем?
@@ -346,18 +345,6 @@ class View {
         this.runner.moveRunnerAtValue(this.options, <HTMLElement>runners[0], <HTMLElement>runners[1]);
       }
     }
-  }
-
-  // Находим координаты
-  onclickTrack(event: any) {
-    const { target } = event;
-    // выводятся все подряд дивы
-    // проверяем, есть ли у таргета slider__track или slider__bar
-    if (!/track|bar/.test(target.className)) return;
-    const coordinate = this.options.orientation === 'horizontal' ? event.clientX : event.clientY;
-    const value = this.convertingPxToValue(coordinate);
-    this.newPosition(value);
-    // теперь выводятся либо горизонталь, либо вертикаль
   }
 
   getPosition(): number {

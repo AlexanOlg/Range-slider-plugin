@@ -23,8 +23,20 @@ class Track {
   }
 
   public listeners(track: HTMLElement) {
-    this.view.onclickTrack = this.view.onclickTrack.bind(this);
-    track.addEventListener('click', this.view.onclickTrack);
+    this.onclickTrack = this.onclickTrack.bind(this);
+    track.addEventListener('click', this.onclickTrack);
+  }
+
+  // Находим координаты
+  onclickTrack(event: any) {
+    const { target } = event;
+    // выводятся все подряд дивы
+    // проверяем, есть ли у таргета slider__track или slider__bar
+    if (!/track|bar/.test(target.className)) return;
+    const coordinate = this.options.orientation === 'horizontal' ? event.clientX : event.clientY;
+    const value = this.view.convertingPxToValue(coordinate);
+    this.view.newPosition(value);
+    // теперь выводятся либо горизонталь, либо вертикаль
   }
 }
 export { Track };
