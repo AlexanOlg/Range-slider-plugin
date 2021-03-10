@@ -33,6 +33,12 @@ class Runner {
     this.moveRunnerAtValue(options, runnerFrom, runnerTo);
   }
 
+  addMarker() {
+    const runners = document.querySelectorAll('.slider__runner');
+    runners[0].setAttribute('data-text', this.options.from);
+    runners[1].setAttribute('data-text', this.options.to);
+  }
+
   // расстановка бегунков по from и to
   moveRunnerAtValue(options: Options, runnerFrom: HTMLElement, runnerTo: HTMLElement): void {
     const { to, from, orientation } = options;

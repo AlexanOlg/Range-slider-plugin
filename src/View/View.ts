@@ -246,7 +246,7 @@ class View {
   }
 
   addEventListeners() {
-    const mouse = this.moveStart.bind(this);
+    const mouse = this.dragStart.bind(this);
     this.slider.addEventListener('touchstart', mouse);
     this.slider.addEventListener('mousedown', mouse);
   }
@@ -265,45 +265,102 @@ class View {
 
   // чтоб перетаскивать бегунки
   // когда перестаем перетаскивать, убираем addEventListeners, и перестает двигаться
-  moveStart(event: MouseEvent | TouchEvent) {
+  dragStart(event: MouseEvent | TouchEvent) {
     // target это каждый из бегунков
     const target = event.target as HTMLElement;
     if (this.getTarget(target)) {
       // определяем какой div двигаем
-      const move = this.move.bind(this, target);
+      const drag = this.drag.bind(this, target);
       // тут функция удаления как раз движений
       const runnersMouse = () => {
-        this.slider.removeEventListener('mousemove', move);
-        this.slider.removeEventListener('touchmove', move);
+        this.slider.removeEventListener('mousemove', drag);
+        this.slider.removeEventListener('touchmove', drag);
         document.removeEventListener('mouseup', runnersMouse);
         document.removeEventListener('touchend', runnersMouse);
       };
-      this.slider.addEventListener('mousemove', move);
-      this.slider.addEventListener('touchmove', move);
+      this.slider.addEventListener('mousemove', drag);
+      this.slider.addEventListener('touchmove', drag);
       document.addEventListener('mouseup', runnersMouse);
       document.addEventListener('touchend', runnersMouse);
     }
   }
 
-  move(target: HTMLElement, event: any) {
+  drag(target: HTMLElement, event: any) {
     // залипание у левого края
     const { orientation } = this.options;
+    const type = this.getTarget(target);
     let mouseValue = 0;
     event.preventDefault();
-    if (!/runner/.test(target.className)) return;
+    // if (!/runner/.test(target.className)) return;
 
-    if (orientation === 'horizontal') {
-      if (event.type === 'touchmove') {
+    // if (orientation === 'horizontal') {
+    //   if (event.type === 'touchmove') {
+    //     mouseValue = this.convertingPxToValue(event.touches[0].clientX);
+    //   } else {
+    //     mouseValue = this.convertingPxToValue(event.clientX);
+    //   }
+    // } else if (event.type === 'touchmove') {
+    //   mouseValue = this.convertingPxToValue(event.touches[0].clientY);
+    // } else {
+    //   mouseValue = this.convertingPxToValue(event.clientY);
+    // }
+    if (event.type === 'touchmove') {
+      if (orientation === 'horizontal') {
         mouseValue = this.convertingPxToValue(event.touches[0].clientX);
       } else {
         mouseValue = this.convertingPxToValue(event.clientX);
       }
-    } else if (event.type === 'touchmove') {
+    } else if (orientation === 'horizontal') {
       mouseValue = this.convertingPxToValue(event.touches[0].clientY);
     } else {
       mouseValue = this.convertingPxToValue(event.clientY);
     }
-    this.newPosition(mouseValue, target);
+
+    const value = this.calcRollerValue(mouseValue);
+    if (value > this.options.max || value < this.options.min) return;
+    type === 'from' && this.setFrom(value);
+    type === 'to' && this.setTo(value);
+    // this.newPosition(mouseValue, target);
+  }
+
+  calcRollerValue(position: number) {
+    let rawValue = (this.options.max * position) / this.sizeSlider;
+    // const stepFraction = String(this.options.step).split('.');
+    // const fractionLength = stepFraction.length === 2 ? -stepFraction[1].length : 0;
+    const value = Math.round(rawValue);
+    const remnant = Math.round(value % this.options.step);
+    const stepInHalf = this.options.step / 2;
+    if (remnant < stepInHalf) {
+      return Math.round(value - remnant);
+    }
+    return Math.round(this.options.step - remnant + value);
+  }
+
+  // движение бегунка from
+  setFrom(value: number) {
+    const {
+      min, max, range, to, from,
+    } = this.options;
+    if (value > max || value < min) return;
+    if (!range) return;
+    if (value > to) return;
+    from = value;
+    this.settings.outResult();
+    this.runner.addMarker();
+    this._renderRollerForm();
+  }
+
+  // движение бегунка to
+  setTo(value) {
+    const {
+      min, max, range, to, from,
+    } = this.options;
+    if (value > max || value < min) return;
+    if (value < from) return;
+    to = value;
+    this.settings.outResult();
+    this.runners.addMarker();
+    this._renderRollerTo();
   }
 
   // value - значение шкалы, target - бегунок from или to
@@ -312,19 +369,21 @@ class View {
       from, to, type, step,
     } = this.options;
 
-    const fromDistance = Math.abs(from - value);
+    const toFromDistance = Math.abs(from - value);
+    console.log(toFromDistance);
     const toDistance = Math.abs(to - value);
+    console.log(toDistance);
     const isSingle = type === 'single';
     const runners = this.slider.querySelectorAll('.slider__runner');
 
-    if (isSingle && fromDistance) {
+    if (isSingle && toFromDistance) {
       this.emitter.emit('newSetting', { from: value });
       this.runner.moveRunnerAtValue(this.options, <HTMLElement>runners[0], <HTMLElement>runners[1]);
       return;
     }
 
     if (!target) {
-      const isFrom = (fromDistance < toDistance) ? 'from' : 'to';
+      const isFrom = (toFromDistance < toDistance) ? 'from' : 'to';
 
       if (isFrom === 'from') {
         this.emitter.emit('newSetting', { from: value });
@@ -336,12 +395,14 @@ class View {
     } else {
       const targets = this.getTarget(target);
       if (targets === 'from') {
-        if (value > to - step) value = from;
-        this.emitter.emit('newSetting', { from: value });
-        this.runner.moveRunnerAtValue(this.options, <HTMLElement>runners[0], <HTMLElement>runners[1]);
-      } else {
-        if (value < from + step) value = to;
-        this.emitter.emit('newSetting', { to: value });
+        if (value > to - step) {
+          value = from;
+          this.emitter.emit('newSetting', { from: to - step });
+          this.runner.moveRunnerAtValue(this.options, <HTMLElement>runners[0], <HTMLElement>runners[1]);
+        }
+      } else if (value < from + step) {
+        value = to;
+        this.emitter.emit('newSetting', { to: from + step });
         this.runner.moveRunnerAtValue(this.options, <HTMLElement>runners[0], <HTMLElement>runners[1]);
       }
     }
