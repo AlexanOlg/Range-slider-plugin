@@ -234,10 +234,10 @@ class View {
     const runners = this.slider.querySelectorAll('.slider__runner');
 
     if (this.options.type === 'single') {
-      this.runner.moveRunnerAtValue(options, <HTMLElement>runners[0], <HTMLElement>runners[1]);
+      this.runner.moveRunnerAtValue();
       runners[0].setAttribute('data-text', startTo);
     }
-    this.runner.moveRunnerAtValue(options, <HTMLElement>runners[0], <HTMLElement>runners[1]);
+    this.runner.moveRunnerAtValue();
 
     runners[0].setAttribute('data-text', startFrom);
     runners[1].setAttribute('data-text', startTo);
@@ -288,79 +288,23 @@ class View {
   drag(target: HTMLElement, event: any) {
     // залипание у левого края
     const { orientation } = this.options;
-    const type = this.getTarget(target);
+
     let mouseValue = 0;
     event.preventDefault();
-    // if (!/runner/.test(target.className)) return;
+    if (!/runner/.test(target.className)) return;
 
-    // if (orientation === 'horizontal') {
-    //   if (event.type === 'touchmove') {
-    //     mouseValue = this.convertingPxToValue(event.touches[0].clientX);
-    //   } else {
-    //     mouseValue = this.convertingPxToValue(event.clientX);
-    //   }
-    // } else if (event.type === 'touchmove') {
-    //   mouseValue = this.convertingPxToValue(event.touches[0].clientY);
-    // } else {
-    //   mouseValue = this.convertingPxToValue(event.clientY);
-    // }
-    if (event.type === 'touchmove') {
-      if (orientation === 'horizontal') {
+    if (orientation === 'horizontal') {
+      if (event.type === 'touchmove') {
         mouseValue = this.convertingPxToValue(event.touches[0].clientX);
       } else {
         mouseValue = this.convertingPxToValue(event.clientX);
       }
-    } else if (orientation === 'horizontal') {
+    } else if (event.type === 'touchmove') {
       mouseValue = this.convertingPxToValue(event.touches[0].clientY);
     } else {
       mouseValue = this.convertingPxToValue(event.clientY);
     }
-
-    const value = this.calcRollerValue(mouseValue);
-    if (value > this.options.max || value < this.options.min) return;
-    type === 'from' && this.setFrom(value);
-    type === 'to' && this.setTo(value);
-    // this.newPosition(mouseValue, target);
-  }
-
-  calcRollerValue(position: number) {
-    let rawValue = (this.options.max * position) / this.sizeSlider;
-    // const stepFraction = String(this.options.step).split('.');
-    // const fractionLength = stepFraction.length === 2 ? -stepFraction[1].length : 0;
-    const value = Math.round(rawValue);
-    const remnant = Math.round(value % this.options.step);
-    const stepInHalf = this.options.step / 2;
-    if (remnant < stepInHalf) {
-      return Math.round(value - remnant);
-    }
-    return Math.round(this.options.step - remnant + value);
-  }
-
-  // движение бегунка from
-  setFrom(value: number) {
-    const {
-      min, max, range, to, from,
-    } = this.options;
-    if (value > max || value < min) return;
-    if (!range) return;
-    if (value > to) return;
-    from = value;
-    this.settings.outResult();
-    this.runner.addMarker();
-    this._renderRollerForm();
-  }
-
-  // движение бегунка to
-  setTo(value) {
-    const {
-      min, max, range, to, from,
-    } = this.options;
-    if (value > max || value < min) return;
-    if (value < from) return;
-    to = value;
-    this.settings.outResult();
-    this.runners.addMarker();
-    this._renderRollerTo();
+    this.newPosition(mouseValue, target);
   }
 
   // value - значение шкалы, target - бегунок from или to
@@ -370,15 +314,12 @@ class View {
     } = this.options;
 
     const toFromDistance = Math.abs(from - value);
-    console.log(toFromDistance);
     const toDistance = Math.abs(to - value);
-    console.log(toDistance);
     const isSingle = type === 'single';
-    const runners = this.slider.querySelectorAll('.slider__runner');
 
     if (isSingle && toFromDistance) {
       this.emitter.emit('newSetting', { from: value });
-      this.runner.moveRunnerAtValue(this.options, <HTMLElement>runners[0], <HTMLElement>runners[1]);
+      this.runner.moveRunnerAtValue();
       return;
     }
 
@@ -387,24 +328,32 @@ class View {
 
       if (isFrom === 'from') {
         this.emitter.emit('newSetting', { from: value });
-        this.runner.moveRunnerAtValue(this.options, <HTMLElement>runners[0], <HTMLElement>runners[1]);
+        this.runner.moveRunnerAtValue();
       } else {
         this.emitter.emit('newSetting', { to: value });
-        this.runner.moveRunnerAtValue(this.options, <HTMLElement>runners[0], <HTMLElement>runners[1]);
+        this.runner.moveRunnerAtValue();
       }
     } else {
       const targets = this.getTarget(target);
+      console.log(target);
       if (targets === 'from') {
-        if (value > to - step) {
-          value = from;
-          this.emitter.emit('newSetting', { from: to - step });
-          this.runner.moveRunnerAtValue(this.options, <HTMLElement>runners[0], <HTMLElement>runners[1]);
+        if (type === 'double') {
+          if (value > to - step) {
+            value = from;
+            this.emitter.emit('newSetting', { from: to - step });
+            this.runner.moveRunnerAtValue();
+            return;
+          }
+          this.emitter.emit('newSetting', { from: value });
+          this.runner.moveRunnerAtValue();
         }
       } else if (value < from + step) {
-        value = to;
         this.emitter.emit('newSetting', { to: from + step });
-        this.runner.moveRunnerAtValue(this.options, <HTMLElement>runners[0], <HTMLElement>runners[1]);
+        this.runner.moveRunnerAtValue();
+        return;
       }
+      this.emitter.emit('newSetting', { from: value });
+      this.runner.moveRunnerAtValue();
     }
   }
 

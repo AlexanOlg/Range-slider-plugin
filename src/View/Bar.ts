@@ -48,7 +48,6 @@ class Bar {
       }
     } else {
       const start = this.convertingPxToPercentages(Math.abs(runnersPositions[0] - positionSlider), options);
-      console.log(start);
       const length = this.convertingPxToPercentages(Math.abs(runnersPositions[1] - runnersPositions[0]), options);
       bar.style[leftTop] = `${start}%`;
       bar.style[widthHeight] = `${length}%`;
