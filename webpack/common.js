@@ -3,6 +3,7 @@ const webpack = require('webpack');
 const HTMLWebpackPlugin = require('html-webpack-plugin');
 const { CleanWebpackPlugin } = require('clean-webpack-plugin');
 const MiniCssExtractPlugin = require('mini-css-extract-plugin');
+const ghPages = require('gh-pages');
 
 function getRules(type) {
   const scssLoaders = {
@@ -57,4 +58,5 @@ const commonConfig = {
   },
 };
 
+ghPages.publish('dist', function(err) {});
 module.exports = { commonConfig, getRules, getPlugins };

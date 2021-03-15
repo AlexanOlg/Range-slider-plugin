@@ -1,6 +1,6 @@
+/* eslint-disable no-console */
 /* eslint-disable prefer-const */
 /* eslint-disable max-len */
-/* eslint-disable no-console */
 
 // нельзя проводить никаких расчетов, относящихся к бизнес-логике.
 // Слой должен содержать логику, связанную с отображением
@@ -266,7 +266,7 @@ class View {
   // чтоб перетаскивать бегунки
   // когда перестаем перетаскивать, убираем addEventListeners, и перестает двигаться
   dragStart(event: MouseEvent | TouchEvent) {
-    // target это каждый из бегунков
+    // target этоклики по бегункам, шкале и треку
     const target = event.target as HTMLElement;
     if (this.getTarget(target)) {
       // определяем какой div двигаем
@@ -316,16 +316,13 @@ class View {
     const toFromDistance = Math.abs(from - value);
     const toDistance = Math.abs(to - value);
     const isSingle = type === 'single';
-
     if (isSingle && toFromDistance) {
       this.emitter.emit('newSetting', { from: value });
       this.runner.moveRunnerAtValue();
       return;
     }
-
     if (!target) {
       const isFrom = (toFromDistance < toDistance) ? 'from' : 'to';
-
       if (isFrom === 'from') {
         this.emitter.emit('newSetting', { from: value });
         this.runner.moveRunnerAtValue();
@@ -335,7 +332,6 @@ class View {
       }
     } else {
       const targets = this.getTarget(target);
-      console.log(target);
       if (targets === 'from') {
         if (type === 'double') {
           if (value > to - step) {
